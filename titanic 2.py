@@ -139,7 +139,7 @@ df.isnull().sum()
 correlation_plot= df.corr(method= 'pearson')
 print("before correlation: " ,df['Age'].corr(df['Survived']))
 #sns.distplot(df['Age'].dropna())
-sns.countplot(x='Survived', hue= 'Age', data= df)
+#sns.countplot(x='Survived', hue= 'Age', data= df)
 
 #df= name_processing(df)
 df= remove_parch_sibsp(df)
@@ -173,7 +173,8 @@ count=1
 #     plt.show()
 # =============================================================================
 
-model= xg_reg = xgb.XGBRegressor(objective ='binary:logistic', max_depth= 6, learning_rate = 0.1)
+model= xg_reg = xgb.XGBRegressor(objective ='binary:logistic',max_bin= 500, tree_method= 'hist', booster= 'gbtree', sampling_method='gradient_based', max_depth= 4, learning_rate = 0.1)
+xg_reg
 #model= LogisticRegression()
 #model = svm.SVC()
 #model= DecisionTreeClassifier()
@@ -210,7 +211,6 @@ test_set= convert_Dataframe(test_set)
 
 df, test_set= check_column(df, test_set)
 df['Age']= calculate_average(list(df['Age']))
-df= df[['Pclass', 'Sex']]
 
 scaler = preprocessing.StandardScaler()
 df = scaler.fit_transform(df)
@@ -229,7 +229,7 @@ model.fit(x,y)
 
 test_set= test_set.fillna(0)
 test_set['Age']= calculate_average(list(test_set['Age']))
-test_set= test_set[['Pclass', 'Sex']]
+#test_set= test_set[['Pclass', 'Sex']]
 
 x_predict= test_set
 x_predict = scaler.fit_transform(x_predict)
@@ -239,7 +239,6 @@ final= model.predict(x_predict)
 #accuracy = log_loss(y_test, final)
 test_set['Survived']= final
 test_set['PassengerId']= passenger
-test_set= test_set[['PassengerId', 'Survived']]
 convert_dict = {'Survived': int} 
 
 
@@ -250,6 +249,7 @@ for i in range(0,len(test_set)):
         test_set['Survived'].at[i]=int(1)
 
 test_set = test_set.astype(convert_dict) 
+test_set= test_set[['PassengerId', 'Survived']]
 test_set.to_csv('attempt1.csv',  index=False)
 #sns.countplot(test_set['Survived'])
 test_set.isnull().sum()
