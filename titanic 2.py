@@ -80,17 +80,20 @@ def check_column(df, df2):
     return df,df2
 
 def change_age(df):
-    df.loc[df['Age']>16, 'Age']=1
-    df.loc[df['Age']<16, 'Age']=0
-    #for i in range(0,len(df)):
+    #df.loc[df['Age']>=16, 'Age']=1
+    #df.loc[df['Age']<16, 'Age']=0
+    for i in range(0,len(df)):
     #    df['Age'].at[i]= int(df['Age'].at[i]/5)
-        #if df['Age'].at[i]>16:
+        if df['Age'].at[i]<=16:
+            df['Age'].at[i]=0
+        else:
+            df['Age'].at[i]=1
             
     
     return df
 
 def convert_Dataframe(df):
-    df= df.drop([ 'Name', 'Fare', 'Ticket', 'Cabin'], axis=1)
+    df= df.drop([ 'PassengerId', 'Name', 'Fare', 'Ticket', 'Cabin'], axis=1)
     
     df['Sex']= label_encoder.fit_transform(df['Sex'])
     
@@ -136,7 +139,7 @@ df.isnull().sum()
 correlation_plot= df.corr(method= 'pearson')
 print("before correlation: " ,df['Age'].corr(df['Survived']))
 #sns.distplot(df['Age'].dropna())
-#sns.countplot(x='Survived', hue= 'Sex', data= df)
+sns.countplot(x='Survived', hue= 'Age', data= df)
 
 #df= name_processing(df)
 df= remove_parch_sibsp(df)
@@ -170,7 +173,7 @@ count=1
 #     plt.show()
 # =============================================================================
 
-model= xg_reg = xgb.XGBRegressor(objective ='binary:logistic', max_depth= 3, learning_rate = 0.1)
+model= xg_reg = xgb.XGBRegressor(objective ='binary:logistic', max_depth= 6, learning_rate = 0.1)
 #model= LogisticRegression()
 #model = svm.SVC()
 #model= DecisionTreeClassifier()
@@ -207,6 +210,8 @@ test_set= convert_Dataframe(test_set)
 
 df, test_set= check_column(df, test_set)
 df['Age']= calculate_average(list(df['Age']))
+df= df[['Pclass', 'Sex']]
+
 scaler = preprocessing.StandardScaler()
 df = scaler.fit_transform(df)
 # =============================================================================
@@ -224,6 +229,7 @@ model.fit(x,y)
 
 test_set= test_set.fillna(0)
 test_set['Age']= calculate_average(list(test_set['Age']))
+test_set= test_set[['Pclass', 'Sex']]
 
 x_predict= test_set
 x_predict = scaler.fit_transform(x_predict)
