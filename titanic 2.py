@@ -25,6 +25,9 @@ from sklearn.metrics import log_loss
 import seaborn as sns
 import xgboost as xgb
 import category_encoders as ce
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.decomposition import PCA
+
 
 
 
@@ -136,7 +139,6 @@ def preprocess(df):
 
 label_encoder = preprocessing.LabelEncoder() 
 df= pd.read_csv('train.csv')
-#sns.pairplot(df,hue= 'Survived', diag_kind='hist', height=1)
 df.isnull().sum()
 correlation_plot= df.corr(method= 'pearson')
 print("before correlation: " ,df['Age'].corr(df['Survived']))
@@ -153,14 +155,13 @@ df= convert_Dataframe(df)
 
 #print("after correlation: " ,df['Fare'].corr(df['Pclass']))
 
-ce_binary = ce.BinaryEncoder(cols=['Pclass'])
-u= ce_binary.fit_transform(df['Pclass'])
+ce_binary = ce.BinaryEncoder(cols=['Age'])
+u= ce_binary.fit_transform(df['Age'])
 df= pd.concat([df, u], axis=1)
-df= df.drop(['Pclass'], axis=1)
+df= df.drop(['Age'], axis=1)
 
 
 y= df['Survived']
-df= df.drop('Survived', axis=1)
 
 #x= df
 
@@ -179,8 +180,8 @@ count=1
 #     plt.show()
 # =============================================================================
 
-model= xg_reg = xgb.XGBRegressor(objective ='binary:logistic',feature_selector='greedy', max_bin= 500, tree_method= 'hist', booster= 'gbtree', sampling_method='gradient_based', max_depth= 4, learning_rate = 0.1)
-xg_reg
+#model= xg_reg = xgb.XGBRegressor(objective ='binary:logistic',feature_selector='greedy', max_bin= 500, tree_method= 'hist', booster= 'gbtree', sampling_method='gradient_based', max_depth= 4, learning_rate = 0.1)
+model = KNeighborsClassifier(n_neighbors=35)
 #model= LogisticRegression()
 #model = svm.SVC()
 #model= DecisionTreeClassifier()
@@ -217,12 +218,24 @@ test_set= remove_parch_sibsp(test_set)
 test_set= preprocess(test_set)
 #test_set= change_age(test_set)
 test_set= convert_Dataframe(test_set)
+#sns.pairplot(df,hue= 'Survived', diag_kind='hist', height=1)
 
 #df, test_set= check_column(df, test_set)
 #df['Age']= calculate_average(list(df['Age']))
-
+output_column= df['Survived']
+df= df.drop('Survived', axis=1)
 scaler = preprocessing.StandardScaler()
 df = scaler.fit_transform(df)
+pca = PCA(n_components=2)
+principalComponents = pca.fit_transform(df)
+principalDf = pd.DataFrame(data = principalComponents
+             , columns = ['principal component 1', 'principal component 2'])
+principalDf['Survived']= output_column
+
+sns.pairplot(principalDf, hue='Survived', diag_kind='hist')
+
+
+
 # =============================================================================
 # df = rename_columns(df)
 # test_set= rename_columns(test_set)
@@ -239,9 +252,9 @@ model.fit(x,y)
 test_set= test_set.fillna(0)
 #test_set['Age']= calculate_average(list(test_set['Age']))
 
-u= ce_binary.fit_transform(test_set['Pclass'])
+u= ce_binary.fit_transform(test_set['Age'])
 test_set= pd.concat([test_set, u], axis=1)
-test_set= test_set.drop(['Pclass'], axis=1)
+test_set= test_set.drop(['Age'], axis=1)
 #test_set['Name_10']=0
 #test_set= test_set[['Pclass', 'Sex']]
 
