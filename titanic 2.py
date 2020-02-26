@@ -15,7 +15,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectKBest
 from numpy import set_printoptions
 from sklearn.feature_selection import f_classif
-from sklearn.preprocessing import OneHotEncoder 
+from sklearn.preprocessing import OneHotEncoder
 from sklearn import preprocessing 
 from sklearn.preprocessing  import LabelEncoder
 import matplotlib.pyplot as plt
@@ -24,6 +24,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import log_loss
 import seaborn as sns
 import xgboost as xgb
+import category_encoders as ce
 
 
 
@@ -41,6 +42,7 @@ def name_processing(df):
     for i in list1:
         name_list= i.split(',')
         last_name= name_list[0]
+        df['Name'].at[i]= last_name
 
     return df
 
@@ -83,8 +85,8 @@ def change_age(df):
     #df.loc[df['Age']>=16, 'Age']=1
     #df.loc[df['Age']<16, 'Age']=0
     for i in range(0,len(df)):
-    #    df['Age'].at[i]= int(df['Age'].at[i]/5)
-        if df['Age'].at[i]<=16:
+    #df['Age'].at[i]= int(df['Age'].at[i]/5)
+        if df['Age'].at[i]<=14:
             df['Age'].at[i]=0
         else:
             df['Age'].at[i]=1
@@ -93,7 +95,7 @@ def change_age(df):
     return df
 
 def convert_Dataframe(df):
-    df= df.drop([ 'PassengerId', 'Name', 'Fare', 'Ticket', 'Cabin'], axis=1)
+    df= df.drop([ 'Name', 'PassengerId', 'Fare', 'Ticket', 'Cabin'], axis=1)
     
     df['Sex']= label_encoder.fit_transform(df['Sex'])
     
@@ -140,17 +142,21 @@ correlation_plot= df.corr(method= 'pearson')
 print("before correlation: " ,df['Age'].corr(df['Survived']))
 #sns.distplot(df['Age'].dropna())
 #sns.countplot(x='Survived', hue= 'Age', data= df)
+#df=name_processing(df)
 
 #df= name_processing(df)
 df= remove_parch_sibsp(df)
 df= preprocess(df)
-df= change_age(df)
+#df= change_age(df)
 df= convert_Dataframe(df)
 
 
 #print("after correlation: " ,df['Fare'].corr(df['Pclass']))
 
-
+ce_binary = ce.BinaryEncoder(cols=['Pclass'])
+u= ce_binary.fit_transform(df['Pclass'])
+df= pd.concat([df, u], axis=1)
+df= df.drop(['Pclass'], axis=1)
 
 
 y= df['Survived']
@@ -173,7 +179,7 @@ count=1
 #     plt.show()
 # =============================================================================
 
-model= xg_reg = xgb.XGBRegressor(objective ='binary:logistic',max_bin= 500, tree_method= 'hist', booster= 'gbtree', sampling_method='gradient_based', max_depth= 4, learning_rate = 0.1)
+model= xg_reg = xgb.XGBRegressor(objective ='binary:logistic',feature_selector='greedy', max_bin= 500, tree_method= 'hist', booster= 'gbtree', sampling_method='gradient_based', max_depth= 4, learning_rate = 0.1)
 xg_reg
 #model= LogisticRegression()
 #model = svm.SVC()
@@ -203,14 +209,17 @@ xg_reg
 
 test_set= pd.read_csv('test.csv')
 passenger= test_set['PassengerId']
+#test_set=name_processing(test_set)
+
+
 
 test_set= remove_parch_sibsp(test_set)
 test_set= preprocess(test_set)
-test_set= change_age(test_set)
+#test_set= change_age(test_set)
 test_set= convert_Dataframe(test_set)
 
-df, test_set= check_column(df, test_set)
-df['Age']= calculate_average(list(df['Age']))
+#df, test_set= check_column(df, test_set)
+#df['Age']= calculate_average(list(df['Age']))
 
 scaler = preprocessing.StandardScaler()
 df = scaler.fit_transform(df)
@@ -228,7 +237,12 @@ model.fit(x,y)
 
 
 test_set= test_set.fillna(0)
-test_set['Age']= calculate_average(list(test_set['Age']))
+#test_set['Age']= calculate_average(list(test_set['Age']))
+
+u= ce_binary.fit_transform(test_set['Pclass'])
+test_set= pd.concat([test_set, u], axis=1)
+test_set= test_set.drop(['Pclass'], axis=1)
+#test_set['Name_10']=0
 #test_set= test_set[['Pclass', 'Sex']]
 
 x_predict= test_set
